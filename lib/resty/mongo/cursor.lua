@@ -251,7 +251,7 @@ function cursor:kill_cursor()
     local id = self.id
     if id then
         local m = mongo_killcusors_message({ id })
-        mongo_send_message(self.conn.sock, m )
+        mongo_send_message(self.sock, m )
         self.id = false
     end
 end

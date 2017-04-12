@@ -14,6 +14,8 @@ local strmatch = string.match
 local util = require('resty.mongo.util')
 local le_uint_to_num = util.le_uint_to_num
 local le_int_to_num = util.le_int_to_num
+local le_int64_to_num = util.le_int64_to_num
+
 local num_to_le_uint = util.num_to_le_uint
 local from_double = util.from_double
 local to_double = util.to_double
@@ -78,9 +80,11 @@ local function read_document( strbuf , numerical )
         elseif op == "\16" then -- int32
             v = le_int_to_num( strbuf(4), 1,8)
         elseif op == "\17" then --timestamp
-            error( "BSON type:'Timestamp' not support yet")
+            v = le_int64_to_num( strbuf(8),1,8)
+            --error( "BSON type:'Timestamp' not support yet")
         elseif op == "\18" then --int64
-            error( "BSON type:'Int64' not support yet")
+            v = le_int64_to_num( strbuf(8),1,8)
+            --error( "BSON type:'Int64' not support yet")
         else
             error ( "Unknown BSON type" .. strbyte ( op ) )
         end

@@ -131,6 +131,8 @@ module(...,package.seeall)
 
 local bson                            = require('resty.mongo.bson')
 local to_bson,from_bson,from_bson_buf = bson.to_bson,bson.from_bson,bson.from_bson_buf
+--local cbson = require("cbson")
+--local to_bson,from_bson,from_bson_buf = cbson.encode,cbson.decode,cbson.decode
 local t_concat,t_insert               = table.concat, table.insert
 
 local util                             = require('resty.mongo.util')

@@ -7,9 +7,10 @@ module(...,package.seeall)
 local util = require("resty.mongo.util")
 local tcp = util.socket.tcp
 local split  = util.split
-local bson = require("resty.mongo.bson")
+--local bson = require("resty.mongo.bson")
 local substr = string.sub
 local Database = require("resty.mongo.database")
+
 
 
 -- class body
@@ -27,7 +28,7 @@ connection.wtimeout = 1000
 connection.auto_connect = true
 connection.user_name = nil
 connection.password = nil
-connection.db_name = 'admin'
+connection.db_name = 'base'
 connection.query_timeout = 1000
 connection.max_bson_size = 4*1024*1024
 connection.find_master = false;
@@ -45,8 +46,8 @@ connection.passives = {}
 
 function connection:connect(...)
     local host,port = ...
-    host = host or self.host or "127.0.0.1"
-    port = port or self.port or 27017
+    host = host or self.host
+    port = port or self.port
     local sock = self.sock
     assert(sock:connect(host,port),"connect failed")
     self.connected = true
@@ -71,12 +72,6 @@ function connection:get_database(name)
     return Database.new(name,self)
 end
 
---[[ todo
-function connection:auth(dbname,user,password,is_digest)
-
-end
---]]
-
 function connection:get_max_bson_size()
     local buildinfo =  self:get_database("admin"):run_command({buildinfo = true})
     if buildinfo then
@@ -85,14 +80,7 @@ function connection:get_max_bson_size()
     return 4194304
 end
 
-function connection:init()
-    local h = substr(self.host,10)
-    local _t = split(h,":")
-    local host,port = _t[1],_t[2]
-    self.host = host
-    if port then
-        self.port = port
-    end
+function connection:init(host,port)
     self.sock = tcp()
     if self.auto_connect then
         self:connect(host,port)
@@ -101,13 +89,13 @@ end
 -----------------------------
 -- consturctor
 -----------------------------
-local function new(option)
+function connection:new(option)
     option = option or {}
+    local host = option.host or self.host
+    local port = option.port or self.port
     local obj = setmetatable(option, connection_mt)
-    obj:init()
+    obj:init(host,port)
     return obj;
 end
 
-return {
-    new = new,
-}
+return connection

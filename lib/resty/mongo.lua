@@ -1,12 +1,11 @@
-module('resty.mongo',package.seeall)
 
-require("resty.mongo.support")
+local mongo = {}
+function mongo:new_connection(option)
+    module('resty.mongo',package.seeall)
+    require("resty.mongo.support")
+    local Connection = require('resty.mongo.connection')
+    return Connection.new(option) 
+end
 
-local Connection = require('resty.mongo.connection')
-
-local function new_connection( ... ) return Connection.new(...) end
-
-return {
-    new_connection = new_connection,
-}
+return mongo
 

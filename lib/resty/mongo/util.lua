@@ -8,6 +8,7 @@ local assert = assert
 local unpack = unpack
 local floor = math.floor
 local strbyte , strchar = string.byte , string.char
+local bit = require "bit"
 local strsub = string.sub
 local t_insert = table.insert
 local t_concat = table.concat
@@ -18,7 +19,7 @@ local hasffi , ffi = pcall ( require , "ffi" )
 
 local util = { }
 
--- little-endian functions
+-- little-endian int32 unpack functions
 
 local le_uint_to_num = function( s , i , j )
     i , j = i or 1 , j or #s
@@ -29,6 +30,8 @@ local le_uint_to_num = function( s , i , j )
     end
     return n
 end
+
+-- little-endian int unpack
 local le_int_to_num = function( s , i , j )
     i , j = i or 1 , j or #s
     local n = le_uint_to_num( s , i , j )
@@ -39,6 +42,19 @@ local le_int_to_num = function( s , i , j )
     return n
 end
 
+local le_int64_to_num = function(s , i , j)
+    i , j = i or 1 , j or #s
+    local b = { strbyte(s,i,j) }
+    local b1 = b[1]
+    local b2 = bit.lshift(b[2],8)
+    local b3 = bit.lshift(b[3],16)
+    local b4 = bit.lshift(b[4],24)
+    --drop high bit data
+    local n = bit.bor(b1,b2,b3,b4)
+    return n
+end
+
+--little-endian int32 pack
 local num_to_le_uint = function( n , bytes )
     bytes = bytes or 4
     local b = { }
@@ -49,6 +65,7 @@ local num_to_le_uint = function( n , bytes )
     return strchar( unpack(b) )
 end
 
+--little-endian int pack
 local num_to_le_int = function( n , bytes )
     bytes = bytes or 4
     if n < 0 then -- Converted to unsigned.
@@ -66,7 +83,7 @@ local le_bpeek = function( s , bitnum )
     return floor( ( char % 2^(bit+1) ) / 2^bit ) == 1
 end
 
--- big-edian unpack function
+-- big-edian int32 unpack function
 
 local be_uint_to_num = function( s , i , j )
     i , j = i or 1 , j or #s
@@ -77,6 +94,9 @@ local be_uint_to_num = function( s , i , j )
     end
     return n
 end
+
+--big-edian int32 pack function
+--
 local num_to_be_uint = function( n , bytes )
     bytes = bytes or 4
     local b = { }
@@ -271,14 +291,43 @@ local function table_print(t)
       table_print(v)
     else
         if k then print(k,":") end
-        print(v)
+        ngx.log(ngx.INFO,v)
     end
   end
 end
 
+
+--  XOR two byte strings together
+local function xor_bytestr( a, b )
+    local res = ""    
+    for i=1,#a do
+        res = res .. string.char(bit.bxor(string.byte(a,i,i), string.byte(b, i, i)))
+    end
+    return res
+end
+
+
+-- A simple implementation of PBKDF2_HMAC_SHA1
+local function pbkdf2_hmac_sha1(pbkdf2_key,iterations,salt,len)
+    local u1 = ngx.hmac_sha1(pbkdf2_key, salt .. string.char(0) .. string.char(0) .. string.char(0) .. string.char(1))
+    local ui = u1
+    for i=1,iterations-1 do
+        u1 = ngx.hmac_sha1(pbkdf2_key, u1)
+        ui = xor_bytestr(ui, u1)
+    end
+    if #ui < len then
+        for i=1,len-(#ui) do
+            ui = string.char(0) .. ui
+        end
+    end
+    return ui
+end
+
+
 return {
     le_uint_to_num = le_uint_to_num,
     le_int_to_num  = le_int_to_num,
+    le_int64_to_num = le_int64_to_num,
     num_to_le_uint = num_to_le_uint,
     num_to_le_int  = num_to_le_int,
     slice_le_uint  = slice_le_uint,
@@ -305,4 +354,6 @@ return {
     time      = time,
     md5       = md5,
     socket    = socket,
+    pbkdf2_hmac_sha1 = pbkdf2_hmac_sha1,
+    xor_bytestr = xor_bytestr,
 }
