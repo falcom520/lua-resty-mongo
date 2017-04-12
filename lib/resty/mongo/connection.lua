@@ -69,7 +69,17 @@ end
 
 
 function connection:get_database(name)
-    return Database.new(name,self)
+    --return Database.new(name,self)
+    local db = Database.new(name,self)
+
+    --error("username->"..self.user_name.." password->"..self.password)
+    if self.user_name ~= nil and self.password ~= nil then
+        if db:auth(self.user_name,self.password) then
+            return db
+        end
+        error("auth failed.")
+    end
+    return db
 end
 
 function connection:get_max_bson_size()
@@ -93,6 +103,10 @@ function connection:new(option)
     option = option or {}
     local host = option.host or self.host
     local port = option.port or self.port
+
+    self.user_name = option.user_name or nil
+    self.password = option.password or nil
+
     local obj = setmetatable(option, connection_mt)
     obj:init(host,port)
     return obj;

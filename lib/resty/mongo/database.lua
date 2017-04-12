@@ -35,7 +35,7 @@ end
 --]]
 
 function database:auth(username,password,ver)
-    local ver = ver or "2.x"
+    local ver = ver or "3.x"
     --2.x authenticate
     if ver == "2.x" then
         local ok = self:run_command({getnonce = true})
